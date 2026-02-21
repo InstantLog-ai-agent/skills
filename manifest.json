@@ -1,0 +1,28 @@
+{
+    "version": "1.0.0",
+    "name": "instantlog-skills",
+    "description": "AI agent skill pack for InstantLog — covers logging integration, event taxonomy, MCP data access, and conversion analysis.",
+    "repository": "https://github.com/instantlog/instantlog-skills",
+    "skills": [
+        {
+            "file": "skills/logging_integration.md",
+            "name": "instantlog_logging_integration",
+            "description": "How to instrument any app with InstantLog logging (setup, API, log levels, metadata, platform examples)"
+        },
+        {
+            "file": "skills/event_taxonomy.md",
+            "name": "instantlog_event_taxonomy",
+            "description": "Standard event naming conventions and metadata keys for consistent, analytics-ready logging"
+        },
+        {
+            "file": "skills/mcp_data_access.md",
+            "name": "instantlog_mcp_data_access",
+            "description": "How to connect to the InstantLog MCP server and use its tools to query logs and run analytics"
+        },
+        {
+            "file": "skills/conversion_playbook.md",
+            "name": "instantlog_conversion_playbook",
+            "description": "Step-by-step agent playbook: analyze funnels, investigate errors, fix code, verify improvements"
+        }
+    ]
+}
