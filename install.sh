@@ -14,6 +14,7 @@ set -e
 
 SKILLS_RAW="https://raw.githubusercontent.com/InstantLog-ai-agent/skills/refs/heads/main/skills"
 SKILLS=(
+  "ios_sdk.md"
   "logging_integration.md"
   "event_taxonomy.md"
   "mcp_data_access.md"
