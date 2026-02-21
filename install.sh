@@ -2,7 +2,7 @@
 # InstantLog Skills Installer
 #
 # Run this from the ROOT of your project directory:
-#   curl -fsSL https://raw.githubusercontent.com/instantlog/instantlog-skills/main/install.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/InstantLog-ai-agent/skills/refs/heads/main/install.sh | bash
 #   or: bash install.sh [target_dir]
 #
 # Re-running is safe — existing files are overwritten (updated), never duplicated.
@@ -12,7 +12,7 @@
 
 set -e
 
-SKILLS_RAW="https://raw.githubusercontent.com/instantlog/instantlog-skills/main/skills"
+SKILLS_RAW="https://raw.githubusercontent.com/InstantLog-ai-agent/skills/refs/heads/main/skills"
 SKILLS=(
   "logging_integration.md"
   "event_taxonomy.md"
