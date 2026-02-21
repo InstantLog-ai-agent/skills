@@ -12,7 +12,7 @@ AI agent skill pack for [InstantLog](https://instantlog.io) — teaches your AI 
 ## Quick Install
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/instantlog/instantlog-skills/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/InstantLog-ai-agent/skills/refs/heads/main/install.sh | bash
 ```
 
 The script auto-detects your agent's skill folder (`.agents/skills/`, `.agent/skills/`, `.codex/skills/`).

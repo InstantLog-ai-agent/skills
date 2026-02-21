@@ -1,9 +1,14 @@
 {
-    "version": "1.0.0",
+    "version": "1.1.0",
     "name": "instantlog-skills",
-    "description": "AI agent skill pack for InstantLog — covers logging integration, event taxonomy, MCP data access, and conversion analysis.",
+    "description": "AI agent skill pack for InstantLog — covers iOS SDK, logging integration, event taxonomy, MCP data access, and conversion analysis.",
     "repository": "https://github.com/instantlog/instantlog-skills",
     "skills": [
+        {
+            "file": "skills/ios_sdk.md",
+            "name": "instantlog_ios_sdk",
+            "description": "How to install, configure, and use the official InstantLog iOS Swift Package (SPM, configure, log/logAsync, user ID, metadata, circuit breaker)"
+        },
         {
             "file": "skills/logging_integration.md",
             "name": "instantlog_logging_integration",
