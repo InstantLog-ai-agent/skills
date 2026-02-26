@@ -1,20 +1,20 @@
 ---
-name: instantlog_logging_integration
+name: sensorcore_logging_integration
 description: |
   Use this skill when the Developer says things like:
-  - "add InstantLog to my project" / "set up logging with InstantLog"
-  - "add logs to my app" / "instrument my code with InstantLog"
+  - "add SensorCore to my project" / "set up logging with SensorCore"
+  - "add logs to my app" / "instrument my code with SensorCore"
   - "where should I put logs?" / "help me add analytics logging"
-  - /instantlog-setup
-  Teaches the agent how to instrument any app (iOS, Android, Web) with InstantLog
+  - /sensorcore-setup
+  Teaches the agent how to instrument any app (iOS, Android, Web) with SensorCore
   log calls: setup, API key storage, log levels, metadata design, and platform examples.
 ---
 
-# InstantLog — Logging Integration Skill
+# SensorCore — Logging Integration Skill
 
 ## Overview
 
-InstantLog collects logs from any app via a single REST endpoint. There is no SDK to install — just HTTP. Your job as an agent is to:
+SensorCore collects logs from any app via a single REST endpoint. There is no SDK to install — just HTTP. Your job as an agent is to:
 
 1. Understand the Developer's codebase structure and identify **key instrumentation points**.
 2. Insert `POST /api/logs` calls at those points with the correct payload.
@@ -26,7 +26,7 @@ InstantLog collects logs from any app via a single REST endpoint. There is no SD
 
 | Term | Meaning |
 |---|---|
-| **Developer** | The person using InstantLog — they own the account and project. |
+| **Developer** | The person using SensorCore — they own the account and project. |
 | **End-User** | The person using the Developer's app. They appear in logs as `user_id`. |
 
 Never confuse these two. The Developer's API Key is secret and must never be shipped in client-side code that End-Users can read.
@@ -35,14 +35,14 @@ Never confuse these two. The Developer's API Key is secret and must never be shi
 
 ## Step 1 — Setup (Developer does this once)
 
-1. Create an account at **instantlog.io**
-2. Create a **Project** → copy the **API Key** (format: `il_...`)
+1. Create an account at **sensorcore.dev**
+2. Create a **Project** → copy the **API Key** (format: `sc_...`)
 3. Store the API Key as an environment variable or in a build config:
    - iOS: `Info.plist` / `xcconfig` / environment
    - Android: `local.properties` / `BuildConfig`
-   - Web/Node: `.env` file (`INSTANTLOG_API_KEY=il_...`)
+   - Web/Node: `.env` file (`SENSORCORE_API_KEY=sc_...`)
 
-**Base URL**: `https://api.instantlog.io` (or `http://localhost:3000` for local dev)
+**Base URL**: `https://api.sensorcore.dev` (or `http://localhost:3000` for local dev)
 
 ---
 
@@ -159,11 +159,11 @@ Keep metadata **flat** (no nested objects). Use consistent key names across all 
 
 ```swift
 func logEvent(_ content: String, level: String = "info", userId: String? = nil, metadata: [String: Any]? = nil) {
-    guard let url = URL(string: "https://api.instantlog.io/api/logs") else { return }
+    guard let url = URL(string: "https://api.sensorcore.dev/api/logs") else { return }
     var request = URLRequest(url: url)
     request.httpMethod = "POST"
     request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-    request.setValue("il_YOUR_API_KEY", forHTTPHeaderField: "x-api-key")
+    request.setValue("sc_YOUR_API_KEY", forHTTPHeaderField: "x-api-key")
 
     var body: [String: Any] = ["content": content, "level": level]
     if let uid = userId { body["user_id"] = uid }
@@ -186,11 +186,11 @@ logEvent("Paywall viewed", userId: currentUser.id, metadata: [
 ```kotlin
 fun logEvent(content: String, level: String = "info", userId: String? = null, metadata: Map<String, Any>? = null) {
     Thread {
-        val url = URL("https://api.instantlog.io/api/logs")
+        val url = URL("https://api.sensorcore.dev/api/logs")
         val conn = url.openConnection() as HttpURLConnection
         conn.requestMethod = "POST"
         conn.setRequestProperty("Content-Type", "application/json")
-        conn.setRequestProperty("x-api-key", "il_YOUR_API_KEY")
+        conn.setRequestProperty("x-api-key", "sc_YOUR_API_KEY")
         conn.doOutput = true
 
         val body = mutableMapOf<String, Any>("content" to content, "level" to level)
@@ -213,11 +213,11 @@ async function logEvent(
   userId?: string,
   metadata?: Record<string, unknown>
 ) {
-  await fetch('https://api.instantlog.io/api/logs', {
+  await fetch('https://api.sensorcore.dev/api/logs', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'x-api-key': process.env.INSTANTLOG_API_KEY!,
+      'x-api-key': process.env.SENSORCORE_API_KEY!,
     },
     body: JSON.stringify({ content, level, user_id: userId, metadata }),
   });

@@ -1,36 +1,34 @@
 ---
-name: instantlog_mcp_data_access
+name: sensorcore_mcp_data_access
 description: |
   Use this skill when the Developer says things like:
   - "analyze my logs" / "check what's happening in production"
   - "what errors do I have?" / "what broke after the release?"
   - "why aren't users converting?" / "check my funnel"
-  - "connect to InstantLog" / "query InstantLog data"
-  - /instantlog-analyze / /instantlog-errors / /instantlog-conversion / /instantlog-release-check
-  Teaches the agent how to connect to the InstantLog MCP server and use its tools
-  to fetch logs, run funnel analysis, investigate drop-offs, and toggle Remote Config flags.
+  - "are there anomalies?" / "who are my problem users?"
+  - "compare segments" / "iOS vs Android" / "version 2.0 vs 2.1"
+  - "forecast" / "predict" / "what will happen next week?"
+  - "find bug patterns" / "where does this error happen?"
+  - "user flow" / "how do users navigate?"
+  - "connect to SensorCore" / "query SensorCore data"
+  - /sensorcore-analyze / /sensorcore-errors / /sensorcore-conversion / /sensorcore-release-check
+  Complete reference of all 21 SensorCore MCP tools: discovery, data access, ML analytics, and remote config.
 ---
 
-# InstantLog — MCP Data Access Skill
+# SensorCore — MCP Tool Reference (Complete)
 
-## Overview
+## Connection
 
-InstantLog exposes a **Model Context Protocol (MCP) server** so that AI agents can directly query log data on behalf of the Developer. The agent reads data, reasons about it, and then acts — by editing the Developer's local source files or toggling Remote Config flags.
-
-**MCP Endpoint**: `POST/GET/DELETE https://api.instantlog.io/api/mcp/sse`
-
-Authentication: `x-api-key: <PROJECT_API_KEY>` header (same key used for log ingestion).
-
-> Transport: **Streamable HTTP** (MCP spec 2025-03-26). The agent's MCP client must support this transport.
-
-### Add to Agent MCP Config
+**MCP Endpoint**: `POST/GET/DELETE https://api.sensorcore.dev/api/mcp/sse`
+Authentication: `x-api-key: <PROJECT_API_KEY>` header.
+Transport: **Streamable HTTP** (MCP spec 2025-03-26).
 
 ```json
 {
   "mcpServers": {
-    "instantlog": {
-      "url": "https://api.instantlog.io/api/mcp/sse",
-      "headers": { "x-api-key": "il_YOUR_PROJECT_API_KEY" }
+    "sensorcore": {
+      "url": "https://api.sensorcore.dev/api/mcp/sse",
+      "headers": { "x-api-key": "sc_YOUR_PROJECT_API_KEY" }
     }
   }
 }
@@ -40,31 +38,34 @@ For local development: use `http://localhost:3000/api/mcp/sse`.
 
 ---
 
-## Recommended Start Sequence
+## Always Start Here
 
-Always begin a session with this order:
+Every analysis session begins with discovery. These 3 calls tell the agent what data exists:
 
 ```
-1. get_project_stats     → understand data volume
-2. get_event_names       → discover what events exist
-3. get_metadata_keys     → discover filter/group-by dimensions
+1. get_project_stats     → data volume (users, logs, errors)
+2. get_event_names       → what events exist, ranked by frequency
+3. get_metadata_keys     → available dimensions (platform, app_version, country...)
 ```
 
-Then branch based on the Developer's goal.
+Then branch based on the Developer's question. See the `analytics_combinator` skill for decision trees and recipes.
 
 ---
 
-## Available Tools
+## Tool Catalogue — 21 Tools
 
-### `get_event_names`
+### 🔍 Discovery (3 tools)
 
-**Use first.** Returns all unique event names ranked by frequency.
+#### `get_event_names`
+
+**What**: Returns all unique event `content` values ranked by frequency.
+**When**: Always call FIRST before any analysis. This is how the agent learns what events exist.
 
 ```json
 { "name": "get_event_names", "arguments": { "limit": 50 } }
 ```
 
-| Parameter | Type | Default | Notes |
+| Param | Type | Default | Notes |
 |---|---|---|---|
 | `limit` | number | 50 | Max 100 |
 
@@ -72,33 +73,42 @@ Then branch based on the Developer's goal.
 
 ---
 
-### `get_metadata_keys`
+#### `get_metadata_keys`
 
-Returns all metadata keys with cardinality and sample values. Use to determine what dimensions are available for filtering and group-by.
+**What**: Returns all metadata keys with cardinality and sample values.
+**When**: Before any `group-by`, `filter`, or `segment_comparison`. The agent needs to know available dimensions.
 
 ```json
 { "name": "get_metadata_keys", "arguments": {} }
 ```
 
-**Returns**: `{ keys: [{ key, cardinality, samples, isHighCardinality }] }` — low-cardinality keys first (good for group-by and filtering).
+**Returns**: `{ keys: [{ key, cardinality, samples, isHighCardinality }] }` — low-cardinality keys first (good for group-by).
+
+**Key insight**: Keys with `isHighCardinality: false` are useful for segmentation (e.g. `platform`, `app_version`, `country`). High-cardinality keys (e.g. `user_id`) are not.
 
 ---
 
-### `get_project_stats`
+#### `get_project_stats`
 
-Overall project stats.
+**What**: Basic project statistics.
+**When**: First call — understand the scale of data before diving in.
 
 ```json
 { "name": "get_project_stats", "arguments": {} }
 ```
 
-**Returns**: project info + `{ total_users, total_logs, total_errors }`.
+**Returns**: `{ project: { id, name, has_errors }, stats: { total_users, total_logs, total_errors } }`.
+
+**Decision point**: If `total_users < 100`, warn the Developer that statistical analyses may not be reliable.
 
 ---
 
-### `get_logs`
+### 📋 Data Access (4 tools)
 
-Fetch recent logs with optional filters.
+#### `get_logs`
+
+**What**: Fetch raw log entries with filters.
+**When**: Spot-checking specific errors, verifying event content, triage.
 
 ```json
 {
@@ -106,43 +116,75 @@ Fetch recent logs with optional filters.
   "arguments": {
     "limit": 100,
     "level": "error",
-    "from": "2025-01-15",
-    "to": "2025-01-22",
+    "from": "2026-02-01",
+    "to": "2026-02-25",
     "user_uuid": "optional-end-user-id"
   }
 }
 ```
 
-| Parameter | Type | Default | Notes |
+| Param | Type | Default | Notes |
 |---|---|---|---|
 | `limit` | number | 30 | Max 200 |
 | `level` | string | — | `info` \| `warning` \| `error` \| `messages` |
-| `from` | string | — | Date filter start `YYYY-MM-DD` |
-| `to` | string | — | Date filter end `YYYY-MM-DD` (inclusive) |
+| `from` | string | — | `YYYY-MM-DD` inclusive |
+| `to` | string | — | `YYYY-MM-DD` inclusive |
 | `user_uuid` | string | — | Filter to one End-User |
 
-**Returns**: Array of log objects with `id`, `content`, `level`, `user_uuid`, `metadata`, `created_at`.
+**Returns**: Array of `{ content, level, user_uuid, metadata, created_at }`.
+
+> ⚠️ Don't use `get_logs` for aggregations — use ML tools instead. Raw logs are for spot-checking.
 
 ---
 
-### `get_users`
+#### `get_users`
 
-List End-Users who have sent logs to this project. Use to find `user_uuid` values for `get_user_journey`.
+**What**: List End-Users with their UUIDs.
+**When**: Finding user identifiers for `get_user_journey`. Supports search and pagination.
 
 ```json
-{
-  "name": "get_users",
-  "arguments": { "limit": 20, "offset": 0, "search": "optional" }
-}
+{ "name": "get_users", "arguments": { "limit": 20, "offset": 0, "search": "optional" } }
 ```
+
+| Param | Type | Default | Notes |
+|---|---|---|---|
+| `limit` | number | 20 | Max 100 |
+| `offset` | number | 0 | Pagination |
+| `search` | string | — | Filter by user_uuid or metadata content |
 
 **Returns**: `{ users: [{ user_uuid, metadata, last_seen_at }], total }`.
 
 ---
 
-### `get_dropoff_users`
+#### `get_user_journey`
 
-**Use before `get_user_journey`** — returns the exact list of End-Users who reached step A of a funnel but did NOT reach step B within the attribution window. This makes drop-off investigation precise instead of guessing from the full user list.
+**What**: Full chronological log sequence for one End-User.
+**When**: Understanding what a user did before an error or drop-off. Always use with a specific `user_uuid` from `get_dropoff_users` or `get_users`.
+
+```json
+{ "name": "get_user_journey", "arguments": { "user_uuid": "abc-123", "limit": 100 } }
+```
+
+| Param | Type | Required | Notes |
+|---|---|---|---|
+| `user_uuid` | string | ✅ | The End-User's external_uuid |
+| `limit` | number | ❌ | Max 200. Default 50 |
+
+**Returns**: Logs ordered oldest→newest for that End-User.
+
+**What to look for**:
+
+- An `error` log right before the drop-off point
+- `Purchase Initiated` present but `Purchase Succeeded` absent → silent payment failure
+- Repeated back-and-forth between screens → confusing UX
+- Specific metadata patterns (OS version, device, country)
+
+---
+
+#### `get_dropoff_users`
+
+**What**: Returns End-Users who completed step A but NOT step B within attribution window.
+**When**: Investigating funnel drop-offs. Always call BEFORE `get_user_journey` — this gives you the exact users to investigate.
 
 ```json
 {
@@ -150,247 +192,437 @@ List End-Users who have sent logs to this project. Use to find `user_uuid` value
   "arguments": {
     "step_a_value": "Paywall Viewed",
     "step_b_value": "Purchase Succeeded",
-    "from": "2025-01-01",
-    "to": "2025-01-31",
+    "from": "2026-02-01",
+    "to": "2026-02-25",
     "window_hours": 24,
     "limit": 20
   }
 }
 ```
 
-| Parameter | Type | Required | Notes |
+| Param | Type | Required | Notes |
 |---|---|---|---|
 | `step_a_value` | string | ✅ | Content substring for step A (case-insensitive LIKE) |
 | `step_b_value` | string | ✅ | Content substring for step B |
 | `from` | string | ✅ | Start date `YYYY-MM-DD` |
-| `to` | string | ✅ | End date `YYYY-MM-DD` (inclusive) |
+| `to` | string | ✅ | End date `YYYY-MM-DD` inclusive |
 | `window_hours` | number | ❌ | Attribution window. Default 24h |
-| `limit` | number | ❌ | Max users to return. Default 20, max 100 |
+| `limit` | number | ❌ | Max 100. Default 20 |
 
 **Returns**:
 
 ```json
 {
-  "dropoff_users": [
-    { "user_uuid": "abc-123", "first_step_a_at": "2025-01-15T10:23:00" }
-  ],
+  "dropoff_users": [{ "user_uuid": "abc-123", "first_step_a_at": "2026-02-15T10:23:00" }],
   "total_step_a": 842,
   "total_dropoffs": 18,
   "dropoff_rate": 0.021
 }
 ```
 
-Feed each `user_uuid` from `dropoff_users` into `get_user_journey` to replay exactly what those users did before dropping off.
+**Interpretation**:
+
+- `dropoff_rate > 0.80` → systemic problem, not edge cases
+- `dropoff_rate < 0.05` → funnel is healthy
+- Feed `user_uuid` values into `get_user_journey` to understand WHY they dropped
 
 ---
 
-### `get_user_journey`
+### 🧠 ML Analytics (12 tools)
 
-Full chronological log sequence for a specific End-User. Use to reconstruct what they did before an error or drop-off.
+All ML tools run server-side. The agent receives compact results, not raw data.
+
+#### `get_error_clusters`
+
+**What**: Groups error logs into clusters by content similarity. Each cluster: count, affected users, first/last seen, metadata patterns.
+**When**: "What errors are happening?" — always better than manually reading `get_logs(level=error)`.
+
+```json
+{ "name": "get_error_clusters", "arguments": { "days": 7, "limit": 10 } }
+```
+
+| Param | Type | Default |
+|---|---|---|
+| `days` | number | 7 |
+| `limit` | number | 10 |
+
+**Returns**: Clusters sorted by count. Each cluster has `content_pattern`, `count`, `affected_users`, `first_seen`, `last_seen`, `metadata_patterns`.
+
+**Key insight**: `metadata_patterns` tells you if the error is platform-specific (e.g. "85% on iOS 17.4").
+
+---
+
+#### `get_anomalies`
+
+**What**: Detects anomalous End-Users using Isolation Forest ML algorithm.
+**When**: "Are there any weird users?" / "Who's causing problems?"
+
+```json
+{ "name": "get_anomalies", "arguments": { "days": 7 } }
+```
+
+| Param | Type | Default |
+|---|---|---|
+| `days` | number | 7 |
+
+**Returns**: Users ranked by anomaly score with reasons (e.g. "unusually high error rate", "abnormal event pattern").
+
+---
+
+#### `get_forecast`
+
+**What**: Prophet time-series forecast. Predicts future trend and detects if current values deviate from predictions.
+**When**: "Will purchases grow?" / "Is the error rate abnormal?" / pre-release baseline.
 
 ```json
 {
-  "name": "get_user_journey",
-  "arguments": { "user_uuid": "abc-123", "limit": 100 }
+  "name": "get_forecast",
+  "arguments": {
+    "event_name": "Purchase Succeeded",
+    "history_days": 60,
+    "forecast_days": 7
+  }
 }
 ```
 
-**Returns**: Logs ordered oldest→newest for that End-User.
+| Param | Type | Required | Default |
+|---|---|---|---|
+| `event_name` | string | ✅ | — |
+| `history_days` | number | ❌ | 30 |
+| `forecast_days` | number | ❌ | 7 |
+
+**Returns**: Daily `yhat` + `yhat_lower` / `yhat_upper` bounds + anomalies if current values deviate from prediction.
 
 ---
 
-### `run_analysis`
+#### `get_statistical_test`
 
-Run a conversion funnel analysis. Optionally compare two time periods.
+**What**: Statistical significance test comparing a metric between two time periods. Returns p-value, z-score, human-readable message.
+**When**: "Did the release change anything?" / "Is this drop significant or just noise?"
 
 ```json
-{ "name": "run_analysis", "arguments": { "plan": { ... } } }
+{
+  "name": "get_statistical_test",
+  "arguments": {
+    "event_name": "Purchase Succeeded",
+    "period1_start": "2026-02-01",
+    "period1_end": "2026-02-10",
+    "period2_start": "2026-02-11",
+    "period2_end": "2026-02-20"
+  }
+}
 ```
 
-See **AnalysisPlan Schema** section below.
+| Param | Type | Required |
+|---|---|---|
+| `event_name` | string | ✅ |
+| `period1_start` | string | ✅ |
+| `period1_end` | string | ✅ |
+| `period2_start` | string | ✅ |
+| `period2_end` | string | ✅ |
+
+**Returns**: `{ p_value, is_significant, change_pct, z_score, message }`.
+
+**Interpretation**: `p_value < 0.05` = statistically significant change, not random noise.
 
 ---
 
-### `get_remote_config`
+#### `get_bug_detective`
 
-Read the current Remote Config flags for the project.
+**What**: Decision Tree that finds multi-factor conditions for errors. Example: "purchase_failed occurs 85% of the time on iOS 17.4 + country=FR".
+**When**: "On which devices/versions/countries does this error happen?" / "Why does this bug reproduce?"
+
+```json
+{
+  "name": "get_bug_detective",
+  "arguments": {
+    "error_content": "payment_failed",
+    "dimensions": "device,os_version,country",
+    "days": 30,
+    "max_depth": 4,
+    "min_samples": 5
+  }
+}
+```
+
+| Param | Type | Default | Notes |
+|---|---|---|---|
+| `days` | number | 30 | — |
+| `error_content` | string | — | Specific error to investigate. Omit for all errors |
+| `dimensions` | string | auto-detect | Comma-separated metadata keys |
+| `max_depth` | number | 4 | Decision tree depth (2–6) |
+| `min_samples` | number | 5 | Min samples per leaf |
+
+**Returns**: Decision tree rules with `lift`, `confidence`, and affected user counts.
+
+---
+
+#### `get_cohort_analysis`
+
+**What**: Groups users into cohorts by ANY dimension and tracks metrics over time.
+**When**: "Are new users better or worse?" / "Retention by version?" / "Revenue per country cohort?"
+
+```json
+{
+  "name": "get_cohort_analysis",
+  "arguments": {
+    "days": 60,
+    "cohort_by": "app_version",
+    "metric": "retention"
+  }
+}
+```
+
+| Param | Type | Default | Notes |
+|---|---|---|---|
+| `days` | number | 60 | — |
+| `cohort_by` | string | `week` | `week`, `month`, `app_version`, `country`, or any metadata key |
+| `metric` | string | `retention` | `retention`, `events`, `revenue`, `errors` |
+
+**Returns**: Per-cohort metrics with comparison summary.
+
+---
+
+#### `get_association_rules`
+
+**What**: Discovers event correlations. "Users who do X have Y% probability of doing Z". Apriori-like algorithm.
+**When**: "What predicts purchase?" / "What actions lead to conversion?"
+
+```json
+{
+  "name": "get_association_rules",
+  "arguments": {
+    "target_event": "Purchase Succeeded",
+    "min_confidence": 0.3,
+    "min_lift": 1.2,
+    "days": 30
+  }
+}
+```
+
+| Param | Type | Default | Notes |
+|---|---|---|---|
+| `days` | number | 30 | — |
+| `target_event` | string | — | Find rules leading to this event. Omit to discover all rules |
+| `min_support` | number | 0.05 | Fraction of users with both events (0.01–0.5) |
+| `min_confidence` | number | 0.3 | Probability P(B\|A) (0.1–1.0) |
+| `min_lift` | number | 1.2 | How much more likely (1.0–10.0) |
+
+**Returns**: Rules with `support`, `confidence`, `lift`. Example: "Users who `tutorial_complete` + `feature_x_used` purchase with 67% probability (lift 3.2x)".
+
+---
+
+#### `get_user_flow`
+
+**What**: Transition graph of user navigation. Discovers common paths, bottlenecks (high exit rate), generates Mermaid diagram.
+**When**: "How do users navigate the app?" / "Where's the bottleneck?"
+
+```json
+{
+  "name": "get_user_flow",
+  "arguments": {
+    "days": 30,
+    "start_event": "App Launched",
+    "max_steps": 6
+  }
+}
+```
+
+| Param | Type | Default | Notes |
+|---|---|---|---|
+| `days` | number | 30 | — |
+| `max_steps` | number | 6 | Steps to track per user (3–10) |
+| `start_event` | string | — | Start from this event. Omit for all paths |
+| `event_filter` | string | — | Only include matching events |
+
+**Returns**: `{ nodes, edges, top_paths, bottlenecks, mermaid_diagram }`.
+
+**Key insight**: `bottlenecks` lists events with high exit rate — these are where users leave the app.
+
+---
+
+#### `get_change_points`
+
+**What**: Detects moments when a metric permanently changed (structural break, not temporary spike). Uses PELT algorithm.
+**When**: "When exactly did conversion drop?" / "When did errors start increasing?"
+
+```json
+{
+  "name": "get_change_points",
+  "arguments": {
+    "event_name": "Purchase Succeeded",
+    "days": 60,
+    "metric": "count",
+    "sensitivity": "medium"
+  }
+}
+```
+
+| Param | Type | Required | Default |
+|---|---|---|---|
+| `event_name` | string | ✅ | — (use `*` for all events) |
+| `days` | number | ❌ | 60 |
+| `metric` | string | ❌ | `count` (`count`, `error_rate`, `unique_users`) |
+| `sensitivity` | string | ❌ | `medium` (`low`, `medium`, `high`) |
+
+**Returns**: Detected change points with `date`, `before_avg`, `after_avg`, `confidence`.
+
+Example: "Since Feb 15, permanent decrease. Before: avg 42/day, after: avg 28/day, confidence 0.95".
+
+---
+
+#### `get_segment_comparison`
+
+**What**: Statistically compares ANY two user segments across all metrics. Mann-Whitney U + Cohen's d.
+**When**: "iOS vs Android?" / "Germany vs USA?" / "Version 2.0 vs 2.1?"
+
+```json
+{
+  "name": "get_segment_comparison",
+  "arguments": {
+    "segment_field": "country",
+    "segment_a": "DE",
+    "segment_b": "US",
+    "days": 30
+  }
+}
+```
+
+| Param | Type | Required |
+|---|---|---|
+| `segment_field` | string | ✅ (any metadata key) |
+| `segment_a` | string | ✅ |
+| `segment_b` | string | ✅ |
+| `days` | number | ❌ (default 30) |
+
+**Returns**: Per-metric comparison with `p_value`, `effect_size` (Cohen's d), `winner`.
+
+**Interpretation**: `p_value < 0.05` + `effect_size > 0.5` = meaningful difference, not noise.
+
+---
+
+#### `get_smart_alerts`
+
+**What**: Runs ALL ML analyzers and returns prioritized alerts with executive summary. The "one call to see everything".
+**When**: "What's happening in the project?" / "Any problems?" / health check.
+
+```json
+{ "name": "get_smart_alerts", "arguments": { "days": 7 } }
+```
+
+| Param | Type | Default |
+|---|---|---|
+| `days` | number | 7 (max 90) |
+
+**Returns**: Prioritized alert list (critical → warning → info) covering error clusters, anomalies, bug patterns, trend changes, and opportunities + executive summary.
+
+> This is the best starting tool for open-ended investigation. From its output, drill deeper with specific tools.
+
+---
+
+#### `run_behavioral_analysis`
+
+**What**: Splits users into two cohorts and compares behavior using ML (Random Forest) or statistical tests (Mann-Whitney U).
+**When**: "What do buyers do differently?" / "Compare premium vs free users"
+
+**Important**: Always call `get_event_names` first — you need to pick features from the event list.
+
+```json
+{
+  "name": "run_behavioral_analysis",
+  "arguments": {
+    "cohort_a": {
+      "did_event": "Purchase Succeeded"
+    },
+    "cohort_b": {
+      "did_event": "Paywall Viewed",
+      "not_event": "Purchase Succeeded"
+    },
+    "features": [
+      { "type": "event_count", "event": "tutorial_complete" },
+      { "type": "event_count", "event": "feature_x_used" },
+      { "type": "event_presence", "event": "referral_clicked" },
+      { "type": "time_to_event", "event": "first_purchase" }
+    ],
+    "method": "ml",
+    "days": 60
+  }
+}
+```
+
+**Cohort definition** — each cohort uses:
+
+| Field | Description |
+|---|---|
+| `did_event` | Include users who have this event (content_contains). `*` = all users |
+| `not_event` | Exclude users who have this event |
+| `metadata_filter` | Filter by metadata key=value, e.g. `{"country": "US"}` |
+
+**Feature types**:
+
+| Type | What it measures |
+|---|---|
+| `event_count` | How many times the user did this event |
+| `event_presence` | 0 or 1 — did they ever do it? |
+| `time_to_event` | Hours from user's first event to this event |
+
+**Methods**:
+
+| Method | Algorithm | Best for |
+|---|---|---|
+| `ml` | Random Forest | Feature importance ranking — "which behavior matters most?" |
+| `statistical` | Mann-Whitney U | Per-feature p-values — "is the difference significant?" |
+
+**Returns**: Feature importances (ml) or per-feature p-values (statistical) + cohort sizes + summary.
+
+---
+
+### ⚙️ Remote Config (2 tools)
+
+#### `get_remote_config`
+
+**What**: Read all current flags.
+**When**: Before setting any flags — understand what exists first.
 
 ```json
 { "name": "get_remote_config", "arguments": {} }
 ```
 
-**Returns**: A JSON object with all current flag key/value pairs.
+**Returns**: JSON object with all flag key/value pairs. Empty `{}` if none.
 
 ---
 
-### `set_remote_config_flag`
+#### `set_remote_config_flag`
 
-Set or delete a Remote Config flag. Use when analysis shows a feature needs to be toggled without a new release.
+**What**: Set or delete a single Remote Config flag. The app reads the updated value immediately — no release needed.
+**When**: Disabling broken features, enabling A/B tests, tuning parameters.
 
 ```json
 {
   "name": "set_remote_config_flag",
-  "arguments": {
-    "key": "show_experimental_paywall",
-    "value": "false"
-  }
+  "arguments": { "key": "show_experimental_paywall", "value": "false" }
 }
 ```
 
-To **delete** a flag, omit `value` or pass `null`. Booleans (`"true"`/`"false"`) and numbers are auto-parsed.
+| Param | Type | Required | Notes |
+|---|---|---|---|
+| `key` | string | ✅ | Flag identifier |
+| `value` | string | ❌ | Omit or `null` to **delete** the flag |
+
+**Value auto-parsing**: `"true"`/`"false"` → boolean, `"42"` → number, else → string.
 
 **Returns**: `{ success: true, config: { ...all_current_flags } }`.
 
----
-
-## AnalysisPlan Schema
-
-An `AnalysisPlan` has a `blocks` array. Required: ≥ 2 `step` blocks + 1 `time-range` block.
-
-### `step` block — a funnel step
-
-```json
-{
-  "blockType": "step",
-  "id": "s1",
-  "displayName": "Paywall Viewed",
-  "matcher": {
-    "type": "content_contains",
-    "value": "Paywall Viewed"
-  }
-}
-```
-
-`matcher.type` options:
-
-| Type | Matches when... |
-|---|---|
-| `content_contains` | `content` field contains the value (case-insensitive LIKE) |
-| `event_exact` | `metadata.event` equals value, OR `content` equals value |
-| `content_regex` | `content` matches a JavaScript regex (applied in JS after SQL pre-filter) |
-
-Optional per-step filters:
-
-```json
-"filters": [
-  { "field": "level", "op": "equals", "value": "info" },
-  { "field": "platform", "op": "equals", "value": "ios" }
-]
-```
+**Workflow**: Always `get_remote_config` → `set_remote_config_flag` → `get_remote_config` (verify).
 
 ---
 
-### `time-range` block
-
-```json
-{
-  "blockType": "time-range",
-  "id": "tr1",
-  "period1Start": "2025-01-01",
-  "period1End": "2025-01-31",
-  "period2Start": "2025-02-01",
-  "period2End": "2025-02-28"
-}
-```
-
-`period2Start`/`period2End` are optional. When provided, `run_analysis` returns a comparison with a `delta` object:
-
-```json
-{
-  "delta": {
-    "a_count": 120,
-    "b_count": 18,
-    "conversion_rate_abs": 0.04,
-    "conversion_rate_rel": 0.25
-  }
-}
-```
-
-`conversion_rate_rel > 0` = improved. `< 0` = regression.
-
----
-
-### `attribution` block (optional)
-
-```json
-{
-  "blockType": "attribution",
-  "id": "attr1",
-  "linkBy": "user_id",
-  "windowSeconds": 86400,
-  "selection": "first-after"
-}
-```
-
-Default: 24-hour window, first matching event after step A.
-
----
-
-### `group-by` block (optional)
-
-```json
-{
-  "blockType": "group-by",
-  "id": "gb1",
-  "dimensions": ["platform", "app_version"]
-}
-```
-
-Use keys from `get_metadata_keys` where `isHighCardinality` is false.
-
----
-
-### `filter` block (optional) — global filter on all logs
-
-```json
-{
-  "blockType": "filter",
-  "id": "f1",
-  "conditions": [
-    { "field": "platform", "op": "equals", "value": "ios" }
-  ]
-}
-```
-
-Filter operators: `equals`, `not_equals`, `exists`, `contains`.
-
----
-
-### Full Example — Paywall → Purchase, broken down by platform
-
-```json
-{
-  "plan": {
-    "blocks": [
-      {
-        "blockType": "step", "id": "s1", "displayName": "Paywall Viewed",
-        "matcher": { "type": "content_contains", "value": "Paywall Viewed" }
-      },
-      {
-        "blockType": "step", "id": "s2", "displayName": "Purchase Succeeded",
-        "matcher": { "type": "content_contains", "value": "Purchase Succeeded" }
-      },
-      {
-        "blockType": "time-range", "id": "tr1",
-        "period1Start": "2025-01-01", "period1End": "2025-01-31"
-      },
-      {
-        "blockType": "group-by", "id": "gb1",
-        "dimensions": ["platform"]
-      }
-    ]
-  }
-}
-```
-
----
-
-## Available MCP Prompts
+## MCP Prompts (Built-in Workflows)
 
 | Prompt | What it does |
 |---|---|
-| `analyze_errors` | Fetches errors, correlates with metadata, finds affected users, applies code fixes |
-| `improve_conversion` | Discovers events → builds funnel → finds drop-off users → proposes and applies fixes |
-| `post_release_check` | Compares error rate and conversion before vs. after a release to detect regressions |
+| `analyze_errors` | Fetches error clusters → anomalies → user journeys → suggests code fixes |
+| `improve_conversion` | Smart alerts → events → funnel → drop-offs → user journeys → fixes |
+| `post_release_check` | Smart alerts → error clusters → statistical test → forecast → regression detection |
 
-These are built-in agent workflows. Invoke them by name in your MCP client.
+These are available as MCP prompts. The agent can invoke them directly, or follow the equivalent steps manually for more control.

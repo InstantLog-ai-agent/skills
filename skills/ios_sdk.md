@@ -1,23 +1,25 @@
 ---
-name: instantlog_ios_sdk
+name: sensorcore_ios_sdk
 description: |
   Use this skill when the Developer is working on an iOS (Swift) project and says things like:
-  - "add InstantLog to my iOS project" / "set up logging in my iOS app"
-  - "install the InstantLog iOS SDK" / "add the swift package"
-  - "add logs to my SwiftUI app" / "instrument my iOS code with InstantLog"
-  - "what methods does InstantLog have on iOS?" / "how do I use InstantLog in Swift?"
-  - /instantlog-ios
-  Teaches the agent how to install, configure, and use the official InstantLog iOS Swift Package.
+  - "add SensorCore to my iOS project" / "set up logging in my iOS app"
+  - "install the SensorCore iOS SDK" / "add the swift package"
+  - "add logs to my SwiftUI app" / "instrument my iOS code with SensorCore"
+  - "what methods does SensorCore have on iOS?" / "how do I use SensorCore in Swift?"
+  - "get remote config in iOS" / "read remote config flags in Swift"
+  - "how do I use Remote Config in my iOS app with SensorCore?"
+  - /sensorcore-ios
+  Teaches the agent how to install, configure, and use the official SensorCore iOS Swift Package.
 ---
 
-# InstantLog iOS SDK — Agent Skill
+# SensorCore iOS SDK — Agent Skill
 
 ## Overview
 
-The InstantLog iOS SDK is an official Swift Package that wraps the InstantLog REST API. It provides:
+The SensorCore iOS SDK is an official Swift Package that wraps the SensorCore REST API. It provides:
 
-- **Fire-and-forget logging** (`InstantLog.log`) — synchronous call, zero blocking
-- **Async logging** (`InstantLog.logAsync`) — awaitable, throws typed errors
+- **Fire-and-forget logging** (`SensorCore.log`) — synchronous call, zero blocking
+- **Async logging** (`SensorCore.logAsync`) — awaitable, throws typed errors
 - **Thread safety** — actor-based, all network I/O off the main thread
 - **Circuit breaker** — automatically stops sending if server returns HTTP 429
 - **Internal queue** — AsyncStream-based, one consumer Task, no thread explosion
@@ -31,7 +33,7 @@ Zero external dependencies.
 ### Option A: Xcode UI
 
 1. **File → Add Package Dependencies…**
-2. Paste: `https://github.com/InstantLog-ai-agent/ios-logger`
+2. Paste: `https://github.com/sensorcore/ios`
 3. Select version: `1.0.1` (or "Up to Next Major Version" from `1.0.1`)
 4. Add to target.
 
@@ -39,10 +41,10 @@ Zero external dependencies.
 
 ```swift
 // In Package.swift dependencies array:
-.package(url: "https://github.com/InstantLog-ai-agent/ios-logger", from: "1.0.1"),
+.package(url: "https://github.com/sensorcore/ios", from: "1.0.1"),
 
 // In target dependencies array:
-.product(name: "InstantLogiOS", package: "ios-logger"),
+.product(name: "SensorCoreiOS", package: "ios"),
 ```
 
 ---
@@ -52,11 +54,11 @@ Zero external dependencies.
 Add this to `AppDelegate.application(_:didFinishLaunchingWithOptions:)` or the `@main` struct's `init()`:
 
 ```swift
-import InstantLogiOS
+import SensorCoreiOS
 
-InstantLog.configure(
-    apiKey: "il_YOUR_API_KEY",          // from the InstantLog dashboard
-    host: URL(string: "https://api.instantlog.io")!,
+SensorCore.configure(
+    apiKey: "sc_YOUR_API_KEY",          // from the SensorCore dashboard
+    host: URL(string: "https://api.sensorcore.dev")!,
     defaultUserId: nil,                  // set after sign-in (see Step 4)
     enabled: true                        // set false to disable in Previews
 )
@@ -65,9 +67,9 @@ InstantLog.configure(
 ### Disable in SwiftUI Previews (recommended)
 
 ```swift
-InstantLog.configure(
-    apiKey: "il_YOUR_API_KEY",
-    host: URL(string: "https://api.instantlog.io")!,
+SensorCore.configure(
+    apiKey: "sc_YOUR_API_KEY",
+    host: URL(string: "https://api.sensorcore.dev")!,
     enabled: !ProcessInfo.processInfo.environment.keys
         .contains("XCODE_RUNNING_FOR_PREVIEWS")
 )
@@ -78,7 +80,7 @@ InstantLog.configure(
 | Parameter | Type | Default | Description |
 |---|---|---|---|
 | `apiKey` | `String` | required | Project API key from dashboard |
-| `host` | `URL` | required | InstantLog server base URL |
+| `host` | `URL` | required | SensorCore server base URL |
 | `defaultUserId` | `String?` | `nil` | Auto-attached to every log |
 | `enabled` | `Bool` | `true` | `false` = silent no-op for all calls |
 | `timeout` | `TimeInterval` | `10` | Network timeout in seconds |
@@ -91,16 +93,16 @@ InstantLog.configure(
 
 ```swift
 // Basic
-InstantLog.log("App launched")
+SensorCore.log("App launched")
 
 // With level
-InstantLog.log("Low storage warning", level: .warning)
+SensorCore.log("Low storage warning", level: .warning)
 
 // With user ID (overrides defaultUserId for this call)
-InstantLog.log("User signed up", level: .info, userId: user.id)
+SensorCore.log("User signed up", level: .info, userId: user.id)
 
 // With metadata
-InstantLog.log("Purchase completed", level: .info, metadata: [
+SensorCore.log("Purchase completed", level: .info, metadata: [
     "product_id": "premium_annual",
     "price": 49.99,
     "is_trial": false,
@@ -114,15 +116,15 @@ InstantLog.log("Purchase completed", level: .info, metadata: [
 // Use only when you explicitly need to know if the log was delivered
 // (e.g., right before a critical state change or app termination)
 do {
-    try await InstantLog.logAsync("Payment failed — critical", level: .error, metadata: [
+    try await SensorCore.logAsync("Payment failed — critical", level: .error, metadata: [
         "error_code": "card_declined",
         "amount": 99
     ])
-} catch InstantLogError.rateLimited {
+} catch SensorCoreError.rateLimited {
     // Server banned this client — SDK is now suspended for this session
-} catch InstantLogError.networkError(let e) {
+} catch SensorCoreError.networkError(let e) {
     // No internet, timeout, etc.
-} catch InstantLogError.serverError(let code) {
+} catch SensorCoreError.serverError(let code) {
     // Server returned 4xx/5xx
 } catch {
     // Other errors
@@ -138,18 +140,18 @@ Set `defaultUserId` after sign-in so every subsequent log is tagged to that user
 ```swift
 // ✅ After successful sign-in
 func userDidSignIn(user: User) {
-    InstantLog.shared.config?.defaultUserId = user.id
-    InstantLog.log("User signed in", level: .info, userId: user.id)
+    SensorCore.shared.config?.defaultUserId = user.id
+    SensorCore.log("User signed in", level: .info, userId: user.id)
 }
 
 // ✅ After sign-out — clear the user
 func userDidSignOut() {
-    InstantLog.log("User signed out", userId: InstantLog.shared.config?.defaultUserId)
-    InstantLog.shared.config?.defaultUserId = nil
+    SensorCore.log("User signed out", userId: SensorCore.shared.config?.defaultUserId)
+    SensorCore.shared.config?.defaultUserId = nil
 }
 ```
 
-> ⚠️ `InstantLog.shared.config` is `nil` until `configure()` is called. Always call `configure()` first.
+> ⚠️ `SensorCore.shared.config` is `nil` until `configure()` is called. Always call `configure()` first.
 
 ---
 
@@ -172,33 +174,33 @@ When scanning an iOS codebase, add logs at these locations:
 
 ```swift
 // AppDelegate / @main
-InstantLog.log("App launched", metadata: ["cold_start": true])
-InstantLog.log("App entered background")
-InstantLog.log("App became active")
+SensorCore.log("App launched", metadata: ["cold_start": true])
+SensorCore.log("App entered background")
+SensorCore.log("App became active")
 ```
 
 ### Authentication
 
 ```swift
-InstantLog.log("Sign up completed", level: .info, userId: newUser.id)
-InstantLog.log("Sign in success", level: .info, userId: user.id)
-InstantLog.log("Sign in failed", level: .error, metadata: ["reason": error.localizedDescription])
+SensorCore.log("Sign up completed", level: .info, userId: newUser.id)
+SensorCore.log("Sign in success", level: .info, userId: user.id)
+SensorCore.log("Sign in failed", level: .error, metadata: ["reason": error.localizedDescription])
 ```
 
 ### Paywall / Purchases
 
 ```swift
-InstantLog.log("Paywall shown", userId: user.id, metadata: ["trigger": "onboarding"])
-InstantLog.log("Purchase initiated", userId: user.id, metadata: ["product": productId])
-InstantLog.log("Purchase success", level: .info, userId: user.id, metadata: ["product": productId, "price": price])
-InstantLog.log("Purchase failed", level: .error, userId: user.id, metadata: ["product": productId, "error": errorCode])
+SensorCore.log("Paywall shown", userId: user.id, metadata: ["trigger": "onboarding"])
+SensorCore.log("Purchase initiated", userId: user.id, metadata: ["product": productId])
+SensorCore.log("Purchase success", level: .info, userId: user.id, metadata: ["product": productId, "price": price])
+SensorCore.log("Purchase failed", level: .error, userId: user.id, metadata: ["product": productId, "error": errorCode])
 ```
 
 ### Screen Views (SwiftUI)
 
 ```swift
 .onAppear {
-    InstantLog.log("Screen appeared: \(screenName)", userId: currentUser?.id)
+    SensorCore.log("Screen appeared: \(screenName)", userId: currentUser?.id)
 }
 ```
 
@@ -206,7 +208,7 @@ InstantLog.log("Purchase failed", level: .error, userId: user.id, metadata: ["pr
 
 ```swift
 // In catch blocks
-InstantLog.log("Network error in \(#function)", level: .error, metadata: [
+SensorCore.log("Network error in \(#function)", level: .error, metadata: [
     "error": error.localizedDescription,
     "url": url.absoluteString
 ])
@@ -214,7 +216,100 @@ InstantLog.log("Network error in \(#function)", level: .error, metadata: [
 
 ---
 
-## Step 7 — Standard Metadata Keys
+## Step 8 — Remote Config
+
+Remote Config lets the SensorCore server (or an AI agent via MCP) control app behaviour **without a new release**.
+Flags are set in the SensorCore dashboard or by an AI agent using `set_remote_config_flag`, and the iOS app reads them at runtime.
+
+### Fetching flags
+
+```swift
+// Call once at startup (or on-demand, e.g. on app foreground)
+let config = await SensorCore.remoteConfig()
+```
+
+`remoteConfig()` is **always safe**:
+
+- Returns an empty config (no crash, no throw) if the SDK is not configured
+- Returns an empty config if the server is unreachable or returns an error
+- Returns an empty config if the response cannot be decoded
+
+> ⚠️ Always provide a **default value** when reading flags — the server may return nothing on the first cold start.
+
+### Typed accessors
+
+| Method | Return type | Notes |
+|---|---|---|
+| `config.bool(for: "key")` | `Bool?` | `nil` if absent or wrong type |
+| `config.string(for: "key")` | `String?` | `nil` if absent or wrong type |
+| `config.double(for: "key")` | `Double?` | Also accepts Int from server |
+| `config.int(for: "key")` | `Int?` | Only exact integers |
+| `config["key"]` | `Any?` | Raw subscript — cast it yourself |
+| `config.raw` | `[String: Any]` | Full decoded JSON dictionary |
+
+### Examples
+
+```swift
+let config = await SensorCore.remoteConfig()
+
+// Feature flags
+if config.bool(for: "show_new_onboarding") == true {
+    showNewOnboarding()
+}
+
+// Numeric tuning
+let timeout = config.double(for: "api_timeout_seconds") ?? 30.0
+let maxRetries = config.int(for: "max_retries") ?? 3
+
+// A/B variants
+let variant = config.string(for: "paywall_variant") ?? "control"
+showPaywall(variant: variant)
+
+// Log the applied config for analytics
+SensorCore.log("Config applied", metadata: [
+    "paywall_variant": variant,
+    "new_onboarding": config.bool(for: "show_new_onboarding") ?? false
+])
+```
+
+### Recommended pattern — fetch at app startup
+
+```swift
+@main
+struct MyApp: App {
+    init() {
+        SensorCore.configure(
+            apiKey: "sc_YOUR_KEY",
+            host: URL(string: "https://api.sensorcore.dev")!
+        )
+    }
+
+    var body: some Scene {
+        WindowGroup {
+            ContentView()
+                .task {
+                    // Apply config as soon as the root view appears
+                    let config = await SensorCore.remoteConfig()
+                    AppFeatures.apply(config)
+                }
+        }
+    }
+}
+```
+
+### Connection to AI agent
+
+An AI agent can set flags using the MCP tool:
+
+```text
+set_remote_config_flag { key: "show_new_onboarding", value: "true" }
+```
+
+The iOS app will read the updated flag on the next `remoteConfig()` call — **no app release required**.
+
+---
+
+## Step 9 — Standard Metadata Keys
 
 Always include these in every log for proper analytics filtering:
 
@@ -234,7 +329,7 @@ let standardMeta: [String: Any] = [
 ### Thread Safety
 
 - All logs are dispatched off the main thread automatically
-- `InstantLog.log()` is synchronous and returns instantly (no await needed)
+- `SensorCore.log()` is synchronous and returns instantly (no await needed)
 - Safe to call from `@MainActor`, SwiftUI views, button actions
 
 ### Queue
@@ -258,7 +353,7 @@ let standardMeta: [String: Any] = [
 
 ## Agent Checklist
 
-- [ ] `InstantLog.configure(...)` called once at app startup (before any `log()` calls)
+- [ ] `SensorCore.configure(...)` called once at app startup (before any `log()` calls)
 - [ ] API key stored securely, not hardcoded in committed files
 - [ ] `defaultUserId` set after sign-in, cleared after sign-out
 - [ ] `enabled: false` set for Previews / unit test environment
@@ -266,3 +361,5 @@ let standardMeta: [String: Any] = [
 - [ ] `.error` level used for real failures, not `.warning`
 - [ ] `app_version` and `platform: "ios"` included in metadata where relevant
 - [ ] `logAsync` only used where delivery confirmation is explicitly required
+- [ ] `SensorCore.remoteConfig()` called at app startup to apply feature flags
+- [ ] Default values provided for all Remote Config reads (never assume a flag exists)

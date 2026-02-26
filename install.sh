@@ -1,8 +1,8 @@
 #!/bin/bash
-# InstantLog Skills Installer
+# SensorCore Skills Installer
 #
 # Run this from the ROOT of your project directory:
-#   curl -fsSL https://raw.githubusercontent.com/InstantLog-ai-agent/skills/refs/heads/main/install.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/sensorcore/skills/refs/heads/main/install.sh | bash
 #   or: bash install.sh [target_dir]
 #
 # Re-running is safe — existing files are overwritten (updated), never duplicated.
@@ -12,7 +12,7 @@
 
 set -e
 
-SKILLS_RAW="https://raw.githubusercontent.com/InstantLog-ai-agent/skills/refs/heads/main/skills"
+SKILLS_RAW="https://raw.githubusercontent.com/sensorcore/skills/refs/heads/main/skills"
 SKILLS=(
   "ios_sdk.md"
   "logging_integration.md"
@@ -50,14 +50,14 @@ fi
 
 mkdir -p "$TARGET_DIR"
 
-echo "📦 Installing InstantLog skills into: $(pwd)/$TARGET_DIR"
+echo "📦 Installing SensorCore skills into: $(pwd)/$TARGET_DIR"
 echo "   (Re-running this script will update skills to the latest version)"
 echo ""
 
 # ── Download skill files ──────────────────────────────────────────────────────
 
 for skill in "${SKILLS[@]}"; do
-  dest="$TARGET_DIR/instantlog_$skill"
+  dest="$TARGET_DIR/sensorcore_$skill"
   if command -v curl &>/dev/null; then
     curl -fsSL "$SKILLS_RAW/$skill" -o "$dest"
   elif command -v wget &>/dev/null; then
@@ -72,16 +72,16 @@ done
 echo ""
 echo "✅ Done! Skills installed."
 echo ""
-echo "Next step — add InstantLog MCP to your agent config:"
+echo "Next step — add SensorCore MCP to your agent config:"
 echo ""
 echo '  {
     "mcpServers": {
-      "instantlog": {
+      "sensorcore": {
         "url": "http://localhost:3000/api/mcp/sse",
-        "headers": { "x-api-key": "il_YOUR_PROJECT_API_KEY" }
+        "headers": { "x-api-key": "sc_YOUR_PROJECT_API_KEY" }
       }
     }
   }'
 echo ""
-echo "Replace the URL with https://api.instantlog.io/api/mcp/sse when using the hosted service."
-echo "Get your API key from the InstantLog dashboard after creating a project."
+echo "Replace the URL with https://api.sensorcore.dev/api/mcp/sse when using the hosted service."
+echo "Get your API key from the SensorCore dashboard after creating a project."

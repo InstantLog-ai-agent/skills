@@ -1,33 +1,38 @@
 {
-    "version": "1.1.0",
-    "name": "instantlog-skills",
-    "description": "AI agent skill pack for InstantLog — covers iOS SDK, logging integration, event taxonomy, MCP data access, and conversion analysis.",
-    "repository": "https://github.com/instantlog/instantlog-skills",
+    "version": "2.0.0",
+    "name": "sensorcore-skills",
+    "description": "AI agent skill pack for SensorCore — covers iOS SDK, logging integration, event taxonomy, MCP data access (21 tools), ML analytics combinator, and conversion playbook.",
+    "repository": "https://github.com/sensorcore/skills",
     "skills": [
         {
             "file": "skills/ios_sdk.md",
-            "name": "instantlog_ios_sdk",
-            "description": "How to install, configure, and use the official InstantLog iOS Swift Package (SPM, configure, log/logAsync, user ID, metadata, circuit breaker)"
+            "name": "sensorcore_ios_sdk",
+            "description": "How to install, configure, and use the official SensorCore iOS Swift Package (SPM, configure, log/logAsync, user ID, metadata, circuit breaker)"
         },
         {
             "file": "skills/logging_integration.md",
-            "name": "instantlog_logging_integration",
-            "description": "How to instrument any app with InstantLog logging (setup, API, log levels, metadata, platform examples)"
+            "name": "sensorcore_logging_integration",
+            "description": "How to instrument any app with SensorCore logging (setup, API, log levels, metadata, platform examples)"
         },
         {
             "file": "skills/event_taxonomy.md",
-            "name": "instantlog_event_taxonomy",
+            "name": "sensorcore_event_taxonomy",
             "description": "Standard event naming conventions and metadata keys for consistent, analytics-ready logging"
         },
         {
             "file": "skills/mcp_data_access.md",
-            "name": "instantlog_mcp_data_access",
-            "description": "How to connect to the InstantLog MCP server and use its tools to query logs and run analytics"
+            "name": "sensorcore_mcp_data_access",
+            "description": "Complete reference of all 21 SensorCore MCP tools: discovery (3), data access (4), ML analytics (12), and remote config (2). Every tool documented with parameters, returns, and when-to-use guidance."
+        },
+        {
+            "file": "skills/analytics_combinator.md",
+            "name": "sensorcore_analytics_combinator",
+            "description": "Teaches the agent HOW to combine MCP tools for complex analytical questions. Contains 9 ready-made recipes (conversion investigation, post-release check, AB tests, bug root cause, etc.), decision trees, source code integration patterns, and anti-patterns."
         },
         {
             "file": "skills/conversion_playbook.md",
-            "name": "instantlog_conversion_playbook",
-            "description": "Step-by-step agent playbook: analyze funnels, investigate errors, fix code, verify improvements"
+            "name": "sensorcore_conversion_playbook",
+            "description": "Step-by-step playbook with ML tools: smart alerts → change detection → segment comparison → drop-off investigation → bug detective → code fix → post-release verification. Integrates source code analysis at every phase."
         }
     ]
 }

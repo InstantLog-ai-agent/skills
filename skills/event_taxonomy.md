@@ -1,13 +1,13 @@
 ---
-name: instantlog_event_taxonomy
-description: Defines a standard naming convention and taxonomy for InstantLog events. Use this skill when setting up logging in a new project to ensure that event names and metadata keys are consistent, discoverable, and useful for analytics from day one.
+name: sensorcore_event_taxonomy
+description: Defines a standard naming convention and taxonomy for SensorCore events. Use this skill when setting up logging in a new project to ensure that event names and metadata keys are consistent, discoverable, and useful for analytics from day one.
 ---
 
-# InstantLog — Event Taxonomy Skill
+# SensorCore — Event Taxonomy Skill
 
 ## Why Taxonomy Matters
 
-InstantLog's analytics engine filters events by the `content` field and groups by `metadata` keys. If event names are inconsistent ("paywall shown" vs "Paywall Viewed" vs "opened paywall"), the funnel analysis breaks and charts become meaningless.
+SensorCore's analytics engine filters events by the `content` field and groups by `metadata` keys. If event names are inconsistent ("paywall shown" vs "Paywall Viewed" vs "opened paywall"), the funnel analysis breaks and charts become meaningless.
 
 **This skill defines the canonical naming rules** an agent must follow when instrumenting a new project.
 
