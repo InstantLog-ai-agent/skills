@@ -72,7 +72,7 @@ Content-Type: application/json
 
 | Field | Required | Type | Notes |
 |---|---|---|---|
-| `content` | ✅ | string (max 200 chars) | Human-readable event description |
+| `content` | ✅ | string (max 5000 chars) | Human-readable event description |
 | `level` | ❌ | `info` \| `warning` \| `error` \| `messages` | Default: `info` |
 | `user_id` | ❌ | string | End-User identifier (device ID, auth UID, etc.) |
 | `metadata` | ❌ | flat JSON object | Arbitrary key/value for filtering & analytics |
@@ -229,7 +229,7 @@ async function logEvent(
 ## Agent Checklist Before Committing Changes
 
 - [ ] API Key is stored as a secret/env var, not hardcoded in source
-- [ ] Every log has a meaningful `content` string (≤ 200 chars)
+- [ ] Every log has a meaningful `content` string (≤ 5000 chars)
 - [ ] `user_id` is populated wherever the current End-User is known
 - [ ] `app_version` and `platform` are always included in metadata
 - [ ] Errors are logged at `level: "error"` (not `"warning"`)

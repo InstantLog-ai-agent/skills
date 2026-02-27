@@ -18,7 +18,7 @@ SensorCore's analytics engine filters events by the `content` field and groups b
 ### `content` field — Event Name
 
 - Use **Title Case with a verb-object pattern**: `"Verb Noun"` or `"Noun Action"`
-- Keep it short and human-readable (≤ 60 chars recommended, hard max 200)
+- Keep it short and human-readable (≤ 60 chars recommended, hard max 5000)
 - Be specific enough to be unique within the funnel step it represents
 - **Do NOT include variable data** in `content` — put it in `metadata` instead
 
