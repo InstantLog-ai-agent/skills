@@ -25,6 +25,8 @@ The script auto-detects your agent's skill folder (`.agents/skills/`, `.agent/sk
 
 | File | Trigger | What it does |
 |---|---|---|
+| `ios_sdk.md` | "Add SensorCore to my iOS app" | How to install, configure, and use the SensorCore iOS Swift Package |
+| `js_sdk.md` | "Add SensorCore to my JS/TS project" | How to install, configure, and use the SensorCore JS/TS npm package |
 | `logging_integration.md` | "Add SensorCore to my project" | Instruments your codebase with correct log calls |
 | `event_taxonomy.md` | "What should I name my events?" | Standard naming conventions for analytics-ready logs |
 | `mcp_data_access.md` | "Analyze my logs" / "Connect to SensorCore MCP" | Complete reference of all 21 MCP tools (discovery, data, ML, config) |

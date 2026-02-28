@@ -1,13 +1,18 @@
 {
     "version": "2.0.0",
     "name": "sensorcore-skills",
-    "description": "AI agent skill pack for SensorCore — covers iOS SDK, logging integration, event taxonomy, MCP data access (21 tools), ML analytics combinator, and conversion playbook.",
+    "description": "AI agent skill pack for SensorCore — covers iOS SDK, JS/TS SDK, logging integration, event taxonomy, MCP data access (21 tools), ML analytics combinator, and conversion playbook.",
     "repository": "https://github.com/sensorcore/skills",
     "skills": [
         {
             "file": "skills/ios_sdk.md",
             "name": "sensorcore_ios_sdk",
             "description": "How to install, configure, and use the official SensorCore iOS Swift Package (SPM, configure, log/logAsync, user ID, metadata, circuit breaker)"
+        },
+        {
+            "file": "skills/js_sdk.md",
+            "name": "sensorcore_js_sdk",
+            "description": "How to install, configure, and use the official SensorCore JS/TS npm package (npm install, configure, log/logAsync, offline buffering, circuit breaker, Remote Config)"
         },
         {
             "file": "skills/logging_integration.md",

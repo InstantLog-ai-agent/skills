@@ -15,6 +15,7 @@ set -e
 SKILLS_RAW="https://raw.githubusercontent.com/sensorcore/skills/refs/heads/main/skills"
 SKILLS=(
   "ios_sdk.md"
+  "js_sdk.md"
   "logging_integration.md"
   "event_taxonomy.md"
   "mcp_data_access.md"
