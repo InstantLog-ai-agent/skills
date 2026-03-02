@@ -1,6 +1,12 @@
 # SensorCore Skills
 
-AI agent skill pack for [SensorCore](https://sensorcore.dev) — teaches your AI coding agent how to:
+AI agent skill pack for [SensorCore](https://sensorcore.dev) — a real-time analytics and logging platform for mobile and web apps. Collect logs, analyze user behavior with ML, run A/B tests, and manage Remote Config from one dashboard.
+
+👉 **[sensorcore.dev](https://sensorcore.dev)** — create a free account to get your API key.
+
+---
+
+These skills teach your AI coding agent how to:
 
 1. **Add logging** to your app with the right events, levels, and metadata
 2. **Analyze production data** via the SensorCore MCP server
@@ -43,14 +49,13 @@ After installing skills, add SensorCore to your agent's MCP config:
 {
   "mcpServers": {
     "sensorcore": {
-      "url": "http://localhost:3000/api/mcp/sse",
+      "url": "https://api.sensorcore.dev/api/mcp/sse",
       "headers": { "x-api-key": "sc_YOUR_PROJECT_API_KEY" }
     }
   }
 }
 ```
 
-> Replace URL with `https://api.sensorcore.dev/api/mcp/sse` for the hosted service.
 > Get your API key from the SensorCore dashboard after creating a project.
 
 ---

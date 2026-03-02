@@ -139,7 +139,6 @@ Keep metadata **flat** (no nested objects). Use consistent key names across all 
 ```json
 {
   "app_version": "2.1.0",
-  "os": "iOS 17.4",
   "os_version": "17.4",
   "platform": "ios",
   "screen": "Paywall",
@@ -174,7 +173,7 @@ func logEvent(_ content: String, level: String = "info", userId: String? = nil, 
 }
 
 // Usage:
-logEvent("Paywall viewed", userId: currentUser.id, metadata: [
+logEvent("Paywall Viewed", userId: currentUser.id, metadata: [
     "plan": "annual",
     "app_version": Bundle.main.shortVersion,
     "screen": "Paywall"

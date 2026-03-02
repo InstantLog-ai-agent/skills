@@ -44,7 +44,7 @@ Every analysis session begins with discovery. These 3 calls tell the agent what 
 
 ```
 1. get_project_stats     → data volume (users, logs, errors)
-2. get_event_names       → what events exist, ranked by frequency
+2. get_event_names       → what events exist, ranked by frequency (default: top 50, max 100)
 3. get_metadata_keys     → available dimensions (platform, app_version, country...)
 ```
 
@@ -53,6 +53,8 @@ Then branch based on the Developer's question. See the `analytics_combinator` sk
 ---
 
 ## Tool Catalogue — 21 Tools
+
+> **Defaults**: Every optional parameter has a server-side default (shown in tables below). If you omit a parameter, the default is used automatically. Always check the default before adding explicit values — most defaults are already optimal.
 
 ### 🔍 Discovery (3 tools)
 
@@ -220,10 +222,16 @@ Then branch based on the Developer's question. See the `analytics_combinator` sk
 }
 ```
 
-**Interpretation**:
+**Interpretation** (context-dependent thresholds):
 
-- `dropoff_rate > 0.80` → systemic problem, not edge cases
-- `dropoff_rate < 0.05` → funnel is healthy
+| Funnel Type | Healthy | Investigate | Critical |
+|---|---|---|---|
+| Paywall → Purchase | < 60% | 60–80% | > 80% |
+| Sign Up → Activation | < 30% | 30–50% | > 50% |
+| General (any 2 steps) | < 40% | 40–60% | > 60% |
+
+> ⚠️ A 40–50% dropoff on a payment step is already a serious problem. Don't wait for 80% to investigate.
+
 - Feed `user_uuid` values into `get_user_journey` to understand WHY they dropped
 
 ---

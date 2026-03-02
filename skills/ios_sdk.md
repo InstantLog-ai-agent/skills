@@ -58,7 +58,6 @@ import SensorCoreiOS
 
 SensorCore.configure(
     apiKey: "sc_YOUR_API_KEY",          // from the SensorCore dashboard
-    host: URL(string: "https://api.sensorcore.dev")!,
     defaultUserId: nil,                  // set after sign-in (see Step 4)
     enabled: true                        // set false to disable in Previews
 )
@@ -69,7 +68,6 @@ SensorCore.configure(
 ```swift
 SensorCore.configure(
     apiKey: "sc_YOUR_API_KEY",
-    host: URL(string: "https://api.sensorcore.dev")!,
     enabled: !ProcessInfo.processInfo.environment.keys
         .contains("XCODE_RUNNING_FOR_PREVIEWS")
 )
@@ -80,7 +78,7 @@ SensorCore.configure(
 | Parameter | Type | Default | Description |
 |---|---|---|---|
 | `apiKey` | `String` | required | Project API key from dashboard |
-| `host` | `URL` | required | SensorCore server base URL |
+| `host` | `URL` | `api.sensorcore.dev` | SensorCore server URL (rarely needed) |
 | `defaultUserId` | `String?` | `nil` | Auto-attached to every log |
 | `enabled` | `Bool` | `true` | `false` = silent no-op for all calls |
 | `timeout` | `TimeInterval` | `10` | Network timeout in seconds |
@@ -93,16 +91,16 @@ SensorCore.configure(
 
 ```swift
 // Basic
-SensorCore.log("App launched")
+SensorCore.log("App Launched")
 
 // With level
-SensorCore.log("Low storage warning", level: .warning)
+SensorCore.log("Low Storage Warning", level: .warning)
 
 // With user ID (overrides defaultUserId for this call)
-SensorCore.log("User signed up", level: .info, userId: user.id)
+SensorCore.log("Sign Up Completed", level: .info, userId: user.id)
 
 // With metadata
-SensorCore.log("Purchase completed", level: .info, metadata: [
+SensorCore.log("Purchase Succeeded", level: .info, metadata: [
     "product_id": "premium_annual",
     "price": 49.99,
     "is_trial": false,
@@ -116,7 +114,7 @@ SensorCore.log("Purchase completed", level: .info, metadata: [
 // Use only when you explicitly need to know if the log was delivered
 // (e.g., right before a critical state change or app termination)
 do {
-    try await SensorCore.logAsync("Payment failed — critical", level: .error, metadata: [
+    try await SensorCore.logAsync("Purchase Failed", level: .error, metadata: [
         "error_code": "card_declined",
         "amount": 99
     ])
@@ -135,23 +133,27 @@ do {
 
 ## Step 4 — Setting the User ID
 
-Set `defaultUserId` after sign-in so every subsequent log is tagged to that user:
+Set `defaultUserId` after sign-in so every subsequent log is tagged to that user.
+Call `configure()` again — it safely reconfigures the SDK with the new user ID:
 
 ```swift
-// ✅ After successful sign-in
+// ✅ After successful sign-in — reconfigure with user ID
 func userDidSignIn(user: User) {
-    SensorCore.shared.config?.defaultUserId = user.id
-    SensorCore.log("User signed in", level: .info, userId: user.id)
+    SensorCore.configure(
+        apiKey: "sc_YOUR_API_KEY",
+        defaultUserId: user.id
+    )
+    SensorCore.log("Sign In Completed", level: .info, userId: user.id)
 }
 
-// ✅ After sign-out — clear the user
+// ✅ After sign-out — reconfigure without user ID
 func userDidSignOut() {
-    SensorCore.log("User signed out", userId: SensorCore.shared.config?.defaultUserId)
-    SensorCore.shared.config?.defaultUserId = nil
+    SensorCore.log("Sign Out")
+    SensorCore.configure(apiKey: "sc_YOUR_API_KEY")
 }
 ```
 
-> ⚠️ `SensorCore.shared.config` is `nil` until `configure()` is called. Always call `configure()` first.
+> ⚠️ `configure()` is safe to call multiple times — each call replaces the previous configuration.
 
 ---
 
@@ -174,33 +176,33 @@ When scanning an iOS codebase, add logs at these locations:
 
 ```swift
 // AppDelegate / @main
-SensorCore.log("App launched", metadata: ["cold_start": true])
-SensorCore.log("App entered background")
-SensorCore.log("App became active")
+SensorCore.log("App Launched", metadata: ["cold_start": true])
+SensorCore.log("App Backgrounded")
+SensorCore.log("App Became Active")
 ```
 
 ### Authentication
 
 ```swift
-SensorCore.log("Sign up completed", level: .info, userId: newUser.id)
-SensorCore.log("Sign in success", level: .info, userId: user.id)
-SensorCore.log("Sign in failed", level: .error, metadata: ["reason": error.localizedDescription])
+SensorCore.log("Sign Up Completed", level: .info, userId: newUser.id)
+SensorCore.log("Sign In Completed", level: .info, userId: user.id)
+SensorCore.log("Sign In Failed", level: .error, metadata: ["reason": error.localizedDescription])
 ```
 
 ### Paywall / Purchases
 
 ```swift
-SensorCore.log("Paywall shown", userId: user.id, metadata: ["trigger": "onboarding"])
-SensorCore.log("Purchase initiated", userId: user.id, metadata: ["product": productId])
-SensorCore.log("Purchase success", level: .info, userId: user.id, metadata: ["product": productId, "price": price])
-SensorCore.log("Purchase failed", level: .error, userId: user.id, metadata: ["product": productId, "error": errorCode])
+SensorCore.log("Paywall Viewed", userId: user.id, metadata: ["trigger": "onboarding"])
+SensorCore.log("Purchase Initiated", userId: user.id, metadata: ["product": productId])
+SensorCore.log("Purchase Succeeded", level: .info, userId: user.id, metadata: ["product": productId, "price": price])
+SensorCore.log("Purchase Failed", level: .error, userId: user.id, metadata: ["product": productId, "error": errorCode])
 ```
 
 ### Screen Views (SwiftUI)
 
 ```swift
 .onAppear {
-    SensorCore.log("Screen appeared: \(screenName)", userId: currentUser?.id)
+    SensorCore.log("Screen Viewed", userId: currentUser?.id, metadata: ["screen": screenName])
 }
 ```
 
@@ -208,9 +210,9 @@ SensorCore.log("Purchase failed", level: .error, userId: user.id, metadata: ["pr
 
 ```swift
 // In catch blocks
-SensorCore.log("Network error in \(#function)", level: .error, metadata: [
+SensorCore.log("API Request Failed", level: .error, metadata: [
     "error": error.localizedDescription,
-    "url": url.absoluteString
+    "endpoint": url.absoluteString
 ])
 ```
 
@@ -278,10 +280,7 @@ SensorCore.log("Config applied", metadata: [
 @main
 struct MyApp: App {
     init() {
-        SensorCore.configure(
-            apiKey: "sc_YOUR_KEY",
-            host: URL(string: "https://api.sensorcore.dev")!
-        )
+        SensorCore.configure(apiKey: "sc_YOUR_KEY")
     }
 
     var body: some Scene {

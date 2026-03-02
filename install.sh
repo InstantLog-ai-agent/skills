@@ -78,11 +78,10 @@ echo ""
 echo '  {
     "mcpServers": {
       "sensorcore": {
-        "url": "http://localhost:3000/api/mcp/sse",
+        "url": "https://api.sensorcore.dev/api/mcp/sse",
         "headers": { "x-api-key": "sc_YOUR_PROJECT_API_KEY" }
       }
     }
   }'
 echo ""
-echo "Replace the URL with https://api.sensorcore.dev/api/mcp/sse when using the hosted service."
 echo "Get your API key from the SensorCore dashboard after creating a project."

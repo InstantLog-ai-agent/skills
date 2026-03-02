@@ -154,8 +154,15 @@ Params: {
 
 Returns the exact `user_uuid` list of people who hit step A but never step B.
 
-- `dropoff_rate > 0.80` → systemic problem
-- `dropoff_rate < 0.05` → funnel is healthy
+**Interpretation thresholds** (context-dependent):
+
+| Funnel Type | Healthy | Investigate | Critical |
+|---|---|---|---|
+| Paywall → Purchase | < 60% | 60–80% | > 80% |
+| Sign Up → Activation | < 30% | 30–50% | > 50% |
+| General (any 2 steps) | < 40% | 40–60% | > 60% |
+
+> ⚠️ A 40–50% dropoff on a payment step is already a serious problem. Don't wait for 80% to investigate.
 
 ### 3.2 — Replay journeys
 

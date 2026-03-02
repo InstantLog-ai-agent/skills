@@ -53,7 +53,6 @@ import SensorCore from 'sensorcore';
 
 SensorCore.configure({
     apiKey: 'sc_YOUR_API_KEY',          // from the SensorCore dashboard
-    host: 'https://api.sensorcore.dev',
     defaultUserId: undefined,            // set after sign-in (see Step 4)
     enabled: true,                       // set false to disable in tests
 });
@@ -64,7 +63,6 @@ SensorCore.configure({
 ```typescript
 SensorCore.configure({
     apiKey: 'sc_YOUR_API_KEY',
-    host: 'https://api.sensorcore.dev',
     enabled: process.env.NODE_ENV !== 'test',
 });
 ```
@@ -74,7 +72,7 @@ SensorCore.configure({
 | Parameter | Type | Default | Description |
 |---|---|---|---|
 | `apiKey` | `string` | required | Project API key from dashboard |
-| `host` | `string` | required | SensorCore server base URL |
+| `host` | `string` | `api.sensorcore.dev` | SensorCore server URL (rarely needed) |
 | `defaultUserId` | `string?` | `undefined` | Auto-attached to every log |
 | `enabled` | `boolean` | `true` | `false` = silent no-op for all calls |
 | `timeout` | `number` | `10000` | Network timeout in **milliseconds** |
@@ -90,16 +88,16 @@ SensorCore.configure({
 
 ```typescript
 // Basic
-SensorCore.log('App started');
+SensorCore.log('App Launched');
 
 // With level
-SensorCore.log('Low memory warning', { level: 'warning' });
+SensorCore.log('Low Memory Warning', { level: 'warning' });
 
 // With user ID (overrides defaultUserId for this call)
-SensorCore.log('User signed up', { level: 'info', userId: user.id });
+SensorCore.log('Sign Up Completed', { level: 'info', userId: user.id });
 
 // With metadata
-SensorCore.log('Purchase completed', {
+SensorCore.log('Purchase Succeeded', {
     level: 'info',
     userId: user.id,
     metadata: {
@@ -118,7 +116,7 @@ import { SensorCoreError } from 'sensorcore';
 
 // Use only when you explicitly need to know if the log was delivered
 try {
-    await SensorCore.logAsync('Payment failed — critical', {
+    await SensorCore.logAsync('Purchase Failed', {
         level: 'error',
         metadata: { error_code: 'card_declined', amount: 99 },
     });
@@ -140,26 +138,23 @@ try {
 ## Step 4 — Setting the User ID
 
 Set `defaultUserId` after sign-in so every subsequent log is tagged to that user.
-
-**Important:** Unlike iOS, there's no `SensorCore.shared.config` in the JS SDK. Instead, call `configure()` again with the updated `defaultUserId`:
+Call `configure()` again — it safely reconfigures the SDK with the new user ID:
 
 ```typescript
 // ✅ After successful sign-in — reconfigure with user ID
 function userDidSignIn(user: User) {
     SensorCore.configure({
         apiKey: 'sc_YOUR_API_KEY',
-        host: 'https://api.sensorcore.dev',
         defaultUserId: user.id,
     });
-    SensorCore.log('User signed in', { userId: user.id });
+    SensorCore.log('Sign In Completed', { userId: user.id });
 }
 
-// ✅ After sign-out — clear the user
+// ✅ After sign-out — reconfigure without user ID
 function userDidSignOut() {
-    SensorCore.log('User signed out');
+    SensorCore.log('Sign Out');
     SensorCore.configure({
         apiKey: 'sc_YOUR_API_KEY',
-        host: 'https://api.sensorcore.dev',
         defaultUserId: undefined,
     });
 }
@@ -192,16 +187,16 @@ When scanning a JS/TS codebase, add logs at these locations:
 
 ```typescript
 // Entry point (main.ts, server.ts, app.tsx, etc.)
-SensorCore.log('App started', { metadata: { version: APP_VERSION, env: NODE_ENV } });
+SensorCore.log('App Launched', { metadata: { version: APP_VERSION, env: NODE_ENV } });
 ```
 
 ### Authentication
 
 ```typescript
-SensorCore.log('Sign up completed', { userId: newUser.id });
-SensorCore.log('Sign in success', { userId: user.id });
-SensorCore.log('Sign in failed', { level: 'error', metadata: { reason: error.message } });
-SensorCore.log('Sign out', { userId: user.id });
+SensorCore.log('Sign Up Completed', { userId: newUser.id });
+SensorCore.log('Sign In Completed', { userId: user.id });
+SensorCore.log('Sign In Failed', { level: 'error', metadata: { reason: error.message } });
+SensorCore.log('Sign Out', { userId: user.id });
 ```
 
 ### Page / Screen Views (React, Next.js, Vue, etc.)
@@ -209,32 +204,32 @@ SensorCore.log('Sign out', { userId: user.id });
 ```typescript
 // React — useEffect or route change handler
 useEffect(() => {
-    SensorCore.log(`Page viewed: ${pathname}`, { userId: currentUser?.id });
+    SensorCore.log('Screen Viewed', { userId: currentUser?.id, metadata: { screen: pathname } });
 }, [pathname]);
 
 // Next.js App Router — layout.tsx
-SensorCore.log('Page viewed: /dashboard', { userId: session?.user?.id });
+SensorCore.log('Screen Viewed', { userId: session?.user?.id, metadata: { screen: '/dashboard' } });
 ```
 
 ### Paywall / Purchases
 
 ```typescript
-SensorCore.log('Paywall shown', { userId: user.id, metadata: { trigger: 'onboarding' } });
-SensorCore.log('Purchase initiated', { userId: user.id, metadata: { product: productId } });
-SensorCore.log('Purchase success', { userId: user.id, metadata: { product: productId, price } });
-SensorCore.log('Purchase failed', { level: 'error', userId: user.id, metadata: { product: productId, error: errorCode } });
+SensorCore.log('Paywall Viewed', { userId: user.id, metadata: { trigger: 'onboarding' } });
+SensorCore.log('Purchase Initiated', { userId: user.id, metadata: { product: productId } });
+SensorCore.log('Purchase Succeeded', { userId: user.id, metadata: { product: productId, price } });
+SensorCore.log('Purchase Failed', { level: 'error', userId: user.id, metadata: { product: productId, error: errorCode } });
 ```
 
 ### API Errors
 
 ```typescript
 // In catch blocks, API error handlers, or global error middleware
-SensorCore.log(`API error: ${endpoint}`, {
+SensorCore.log('API Request Failed', {
     level: 'error',
     metadata: {
         error: error.message,
         status: response?.status,
-        url: endpoint,
+        endpoint,
     },
 });
 ```
@@ -243,9 +238,9 @@ SensorCore.log(`API error: ${endpoint}`, {
 
 ```typescript
 app.use((err, req, res, next) => {
-    SensorCore.log(`Server error: ${req.method} ${req.path}`, {
+    SensorCore.log('API Request Error', {
         level: 'error',
-        metadata: { error: err.message, status: 500 },
+        metadata: { error: err.message, status: 500, endpoint: `${req.method} ${req.path}` },
     });
     res.status(500).json({ error: 'Internal Server Error' });
 });
